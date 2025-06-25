@@ -10,7 +10,7 @@ class ScanTranslates
 {
     public static function run(): Collection
     {
-        return (new self())->handle();
+        return (new self)->handle();
     }
 
     public function handle(): Collection
@@ -32,7 +32,7 @@ class ScanTranslates
             $collections[] = [
                 'key' => $key,
                 'values' => $value,
-                'count' => count(array_filter($value, fn($item) => ! empty($item) && strlen($item) > 0)),
+                'count' => count(array_filter($value, fn ($item) => ! empty($item) && strlen($item) > 0)),
             ];
         }
 

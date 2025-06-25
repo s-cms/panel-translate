@@ -54,7 +54,7 @@ class TranslatesPage extends Page implements HasTable
                     ->label(__('panel-translate::admin.key'))
                     ->required()
                     ->live()
-                    ->afterStateUpdated(fn() => $this->resetTable()),
+                    ->afterStateUpdated(fn () => $this->resetTable()),
                 Textarea::make('value')
                     ->label(__('panel-translate::admin.value'))
                     ->required()
@@ -68,11 +68,11 @@ class TranslatesPage extends Page implements HasTable
 
         return $table
             ->records(
-                fn(?string $search, ?string $sortColumn, ?string $sortDirection): Collection => ScanTranslates::run()
+                fn (?string $search, ?string $sortColumn, ?string $sortDirection): Collection => ScanTranslates::run()
                     ->when(
                         filled($search),
-                        fn(Collection $data): Collection => $data->filter(
-                            fn(array $record): bool => str_contains(
+                        fn (Collection $data): Collection => $data->filter(
+                            fn (array $record): bool => str_contains(
                                 Str::lower($record['key']),
                                 Str::lower($search),
                             ),
@@ -96,19 +96,19 @@ class TranslatesPage extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('count')
                     ->label(__('panel-translate::admin.count'))
-                    ->formatStateUsing(fn(int $state): string => $state . '/' . $this->getCountAvailableLanguages())
+                    ->formatStateUsing(fn (int $state): string => $state . '/' . $this->getCountAvailableLanguages())
                     ->badge()
-                    ->color(fn(int $state): string => $state === $this->getCountAvailableLanguages() ? 'success' : 'warning')
+                    ->color(fn (int $state): string => $state === $this->getCountAvailableLanguages() ? 'success' : 'warning')
                     ->wrap(),
                 TextColumn::make('values')
                     ->label(__('panel-translate::admin.values'))
-                    ->formatStateUsing(fn(string $state): string => Str::limit($state, 50))
+                    ->formatStateUsing(fn (string $state): string => Str::limit($state, 50))
                     ->wrap(),
             ])
             ->recordActions([
                 \Filament\Actions\Action::make('edit')
                     ->label(__('filament-actions::edit.single.label'))
-                    ->recordTitle(fn(array $record): string => $record['key'])
+                    ->recordTitle(fn (array $record): string => $record['key'])
                     ->icon(FilamentIcon::resolve('actions::edit-action') ?? Heroicon::PencilSquare)
                     ->schema(function (): array {
                         $languages = $this->getAvailableLanguages();
@@ -125,7 +125,7 @@ class TranslatesPage extends Page implements HasTable
 
                         return $form;
                     })
-                    ->fillForm(fn(array $record): array => [
+                    ->fillForm(fn (array $record): array => [
                         'key' => $record['key'],
                         'values' => $record['values'],
                     ])
@@ -160,7 +160,7 @@ class TranslatesPage extends Page implements HasTable
 
     protected function getCountAvailableLanguages(): int
     {
-        return once(fn() => count($this->getAvailableLanguages()));
+        return once(fn () => count($this->getAvailableLanguages()));
     }
 
     protected function getLanguageName(string $locale): string

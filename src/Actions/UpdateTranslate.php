@@ -8,7 +8,7 @@ class UpdateTranslate
 {
     public static function run(array $data): bool
     {
-        return (new self())->handle($data);
+        return (new self)->handle($data);
     }
 
     public function handle(array $data): bool
