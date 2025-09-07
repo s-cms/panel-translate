@@ -17,25 +17,21 @@ class ScanTranslates
     {
         $translations = [];
 
-        // Собираем переводы из Blade файлов
         $bladeTranslations = $this->scanBladeFiles();
         $translations = array_merge($translations, $bladeTranslations);
 
-        // Собираем существующие переводы из файлов
         $fileTranslations = $this->scanTranslationFiles();
         $translations = array_merge($translations, $fileTranslations);
 
-        // Получаем полные данные переводов
         $fullTranslations = $this->getFullTranslationData($translations);
         $collections = [];
         foreach ($fullTranslations as $key => $value) {
             $collections[] = [
                 'key' => $key,
                 'values' => $value,
-                'count' => count(array_filter($value, fn ($item) => ! empty($item) && strlen($item) > 0)),
+                'count' => count(array_filter($value, fn($item) => ! empty($item) && strlen($item) > 0)),
             ];
         }
-
         return collect($collections);
     }
 
@@ -61,11 +57,10 @@ class ScanTranslates
     private function scanTranslationFiles(): array
     {
         $translations = [];
-        $langPath = resource_path('lang');
-        $locales = ['en', 'ru']; // Добавьте другие языки по необходимости
+        $locales = $this->getAvailableLanguages();
 
         foreach ($locales as $locale) {
-            $jsonFile = $langPath . '/' . $locale . '.json';
+            $jsonFile = resource_path('lang') . '/' . $locale . '.json';
             if (File::exists($jsonFile)) {
                 $content = File::get($jsonFile);
                 $data = json_decode($content, true);
@@ -83,14 +78,13 @@ class ScanTranslates
     private function getFullTranslationData(array $keys): array
     {
         $translations = [];
-        $langPath = resource_path('lang');
-        $locales = ['en', 'ru']; // Добавьте другие языки по необходимости
+        $locales = $this->getAvailableLanguages();
 
         foreach ($keys as $key) {
             $values = [];
 
             foreach ($locales as $locale) {
-                $jsonFile = $langPath . '/' . $locale . '.json';
+                $jsonFile = resource_path('lang') . '/' . $locale . '.json';
                 $value = '';
 
                 if (File::exists($jsonFile)) {
@@ -110,39 +104,46 @@ class ScanTranslates
         return $translations;
     }
 
-    public function getTranslationData(): array
+    /**
+     * Get available languages by scanning both JSON files and language directories
+     */
+    private function getAvailableLanguages(): array
     {
-        $translations = [];
+        $locales = [];
         $langPath = resource_path('lang');
-        $locales = ['en', 'ru']; // Добавьте другие языки по необходимости
 
-        // Сначала собираем все ключи
-        $allKeys = $this->handle();
-
-        foreach ($allKeys as $item) {
-            $translationData = ['key' => $item['key']];
-
-            foreach ($locales as $locale) {
-                $translationData[$locale] = $item['values'][$locale] ?? '';
-            }
-
-            $translations[] = $translationData;
+        if (!File::exists($langPath)) {
+            return ['en', 'ru']; // Fallback to default locales if lang directory doesn't exist
         }
 
-        return $translations;
-    }
+        // Scan for JSON files (e.g., en.json, ru.json)
+        $jsonFiles = File::glob($langPath . '/*.json');
+        foreach ($jsonFiles as $jsonFile) {
+            $locale = basename($jsonFile, '.json');
+            $locales[] = $locale;
+        }
 
-    public function saveTranslation(string $key, array $translations): void
-    {
-        UpdateTranslate::run([
-            'key' => $key,
-            'values' => $translations,
-        ]);
+        // Scan for language directories (e.g., en/, ru/)
+        $directories = File::directories($langPath);
+        foreach ($directories as $directory) {
+            $locale = basename($directory);
+            $locales[] = $locale;
+        }
+
+        // Remove duplicates and sort
+        $locales = array_unique($locales);
+        sort($locales);
+
+        // Return default locales if no languages found
+        return empty($locales) ? ['en', 'ru'] : $locales;
     }
 
     public function asCommand(Command $command): void
     {
         $translations = $this->handle();
+        $availableLanguages = $this->getAvailableLanguages();
+
+        $command->info('Available languages: ' . implode(', ', $availableLanguages));
         $command->info('Found ' . $translations->count() . ' translation keys.');
 
         foreach ($translations as $item) {

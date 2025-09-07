@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
@@ -54,7 +55,7 @@ class TranslatesPage extends Page implements HasTable
                     ->label(__('panel-translate::admin.key'))
                     ->required()
                     ->live()
-                    ->afterStateUpdated(fn () => $this->resetTable()),
+                    ->afterStateUpdated(fn() => $this->resetTable()),
                 Textarea::make('value')
                     ->label(__('panel-translate::admin.value'))
                     ->required()
@@ -65,14 +66,14 @@ class TranslatesPage extends Page implements HasTable
 
     public function table(Table $table): Table
     {
-
         return $table
+            ->recordAction('edit')
             ->records(
-                fn (?string $search, ?string $sortColumn, ?string $sortDirection): Collection => ScanTranslates::run()
+                fn(?string $search, ?string $sortColumn, ?string $sortDirection): Collection => ScanTranslates::run()
                     ->when(
                         filled($search),
-                        fn (Collection $data): Collection => $data->filter(
-                            fn (array $record): bool => str_contains(
+                        fn(Collection $data): Collection => $data->filter(
+                            fn(array $record): bool => str_contains(
                                 Str::lower($record['key']),
                                 Str::lower($search),
                             ),
@@ -96,19 +97,26 @@ class TranslatesPage extends Page implements HasTable
                     ->sortable(),
                 TextColumn::make('count')
                     ->label(__('panel-translate::admin.count'))
-                    ->formatStateUsing(fn (int $state): string => $state . '/' . $this->getCountAvailableLanguages())
+                    ->formatStateUsing(fn(int $state): string => $state . '/' . $this->getCountAvailableLanguages())
                     ->badge()
-                    ->color(fn (int $state): string => $state === $this->getCountAvailableLanguages() ? 'success' : 'warning')
+                    ->color(fn(int $state): string => $state === $this->getCountAvailableLanguages() ? 'success' : 'warning')
                     ->wrap(),
                 TextColumn::make('values')
                     ->label(__('panel-translate::admin.values'))
-                    ->formatStateUsing(fn (string $state): string => Str::limit($state, 50))
+                    ->getStateUsing(function ($record) {
+                        $values = implode(',', ($record['values'] ?? []));
+                        if (strlen(str_replace(',', '', $values)) == 0) {
+                            return ' - ';
+                        }
+                        return $values;
+                    })
+                    ->limit(50)
                     ->wrap(),
             ])
             ->recordActions([
                 \Filament\Actions\Action::make('edit')
                     ->label(__('filament-actions::edit.single.label'))
-                    ->recordTitle(fn (array $record): string => $record['key'])
+                    ->recordTitle(fn(array $record): string => $record['key'])
                     ->icon(FilamentIcon::resolve('actions::edit-action') ?? Heroicon::PencilSquare)
                     ->schema(function (): array {
                         $languages = $this->getAvailableLanguages();
@@ -125,7 +133,7 @@ class TranslatesPage extends Page implements HasTable
 
                         return $form;
                     })
-                    ->fillForm(fn (array $record): array => [
+                    ->fillForm(fn(array $record): array => [
                         'key' => $record['key'],
                         'values' => $record['values'],
                     ])
@@ -155,12 +163,16 @@ class TranslatesPage extends Page implements HasTable
             }
         }
 
+        if (empty($languages)) {
+            $languages[] = 'en';
+        }
+
         return $languages;
     }
 
     protected function getCountAvailableLanguages(): int
     {
-        return once(fn () => count($this->getAvailableLanguages()));
+        return once(fn() => count($this->getAvailableLanguages()));
     }
 
     protected function getLanguageName(string $locale): string
@@ -176,8 +188,19 @@ class TranslatesPage extends Page implements HasTable
             'ja' => '日本語',
             'ko' => '한국어',
             'zh' => '中文',
+            'uk' => 'Українська',
         ];
 
         return $names[$locale] ?? $locale;
+    }
+
+    public function isTableColumnToggledHidden(string $name): bool
+    {
+        return false;
+    }
+
+    public function getSelectedTableRecordsQuery(bool $shouldFetchSelectedRecords = true, ?int $chunkSize = null): Builder
+    {
+        return \Illuminate\Database\Eloquent\Model::query();
     }
 }
