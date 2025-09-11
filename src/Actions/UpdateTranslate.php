@@ -18,6 +18,11 @@ class UpdateTranslate
         $values = $data['values'];
         $langPath = resource_path('lang');
 
+        // Create lang directory if it doesn't exist
+        if (! File::exists($langPath)) {
+            File::makeDirectory($langPath, 0755, true);
+        }
+
         foreach ($values as $locale => $value) {
             $jsonFile = $langPath . '/' . $locale . '.json';
             $data = [];

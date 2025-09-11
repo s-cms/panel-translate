@@ -135,7 +135,7 @@ class TranslatesPage extends Page implements HasTable
                     })
                     ->fillForm(fn(array $record): array => [
                         'key' => $record['key'],
-                        'values' => $record['values'],
+                        'values' => $this->getFormValues($record),
                     ])
                     ->action(function (array $data): void {
                         UpdateTranslate::run($data);
@@ -157,14 +157,23 @@ class TranslatesPage extends Page implements HasTable
         $langPath = resource_path('lang');
 
         if (File::exists($langPath)) {
+            // Parse directories
             foreach (File::directories($langPath) as $dir) {
                 $locale = basename($dir);
                 $languages[$locale] = $this->getLanguageName($locale);
             }
+
+            // Parse JSON files
+            foreach (File::files($langPath) as $file) {
+                if ($file->getExtension() === 'json') {
+                    $locale = $file->getFilenameWithoutExtension();
+                    $languages[$locale] = $this->getLanguageName($locale);
+                }
+            }
         }
 
         if (empty($languages)) {
-            $languages[] = 'en';
+            $languages['en'] = $this->getLanguageName('en');
         }
 
         return $languages;
@@ -192,6 +201,22 @@ class TranslatesPage extends Page implements HasTable
         ];
 
         return $names[$locale] ?? $locale;
+    }
+
+    protected function getFormValues(array $record): array
+    {
+        $values = $record['values'] ?? [];
+        $currentLocale = app()->getLocale();
+        
+        // Check if all translations are empty
+        $allEmpty = empty(array_filter($values, fn($value) => !empty(trim($value))));
+        
+        // If all translations are empty, prefill current locale with the key
+        if ($allEmpty && isset($this->getAvailableLanguages()[$currentLocale])) {
+            $values[$currentLocale] = $record['key'];
+        }
+        
+        return $values;
     }
 
     public function isTableColumnToggledHidden(string $name): bool
