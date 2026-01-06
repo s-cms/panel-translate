@@ -71,6 +71,8 @@ class ScanTranslates
                 }
             }
         }
+        $jsxTranslations = $this->scanJSFiles();
+        $translations = array_merge($translations, $jsxTranslations);
 
         return $translations;
     }
@@ -155,5 +157,27 @@ class ScanTranslates
         }
 
         $command->info('Translations scanned and saved.');
+    }
+
+    private function scanJSFiles(): array
+    {
+        $path = resource_path('js');
+        $files = File::allFiles($path);
+        $regex = '/trans\(\s*[\'"](.+?)[\'"]\s*\)/';
+        $translations = [];
+        foreach ($files as $file) {
+            try {
+                $contents = File::get($file->getRealPath());
+            } catch (\Throwable $e) {
+                continue;
+            }
+            if (preg_match_all($regex, $contents, $matches)) {
+                foreach ($matches[1] as $key) {
+                    $translations[$key] = $key;
+                }
+            }
+        }
+
+        return $translations;
     }
 }
