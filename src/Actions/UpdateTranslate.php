@@ -16,7 +16,7 @@ class UpdateTranslate
         // $data = ['key' => 'test', 'values' => ['en' => 'test', 'uk' => 'test']]
         $key = $data['key'];
         $values = $data['values'];
-        $langPath = resource_path('lang');
+        $langPath = lang_path();
 
         // Create lang directory if it doesn't exist
         if (! File::exists($langPath)) {

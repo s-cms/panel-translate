@@ -154,7 +154,7 @@ class TranslatesPage extends Page implements HasTable
     protected function getAvailableLanguages(): array
     {
         $languages = [];
-        $langPath = resource_path('lang');
+        $langPath = lang_path();
 
         if (File::exists($langPath)) {
             // Parse directories
