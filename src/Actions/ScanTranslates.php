@@ -60,7 +60,7 @@ class ScanTranslates
         $locales = $this->getAvailableLanguages();
 
         foreach ($locales as $locale) {
-            $jsonFile = resource_path('lang') . '/' . $locale . '.json';
+            $jsonFile = lang_path() . '/' . $locale . '.json';
             if (File::exists($jsonFile)) {
                 $content = File::get($jsonFile);
                 $data = json_decode($content, true);
@@ -86,7 +86,7 @@ class ScanTranslates
             $values = [];
 
             foreach ($locales as $locale) {
-                $jsonFile = resource_path('lang') . '/' . $locale . '.json';
+                $jsonFile = lang_path() . '/' . $locale . '.json';
                 $value = '';
 
                 if (File::exists($jsonFile)) {
@@ -112,7 +112,7 @@ class ScanTranslates
     private function getAvailableLanguages(): array
     {
         $locales = [];
-        $langPath = resource_path('lang');
+        $langPath = lang_path();
 
         if (!File::exists($langPath)) {
             return ['en', 'ru']; // Fallback to default locales if lang directory doesn't exist
